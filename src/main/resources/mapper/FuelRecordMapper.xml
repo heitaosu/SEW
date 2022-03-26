@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.company.project.dao.FuelRecordMapper">
+  <resultMap id="BaseResultMap" type="com.company.project.model.FuelRecord">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <result column="id" jdbcType="INTEGER" property="id" />
+    <result column="work_order" jdbcType="BIGINT" property="workOrder" />
+    <result column="fuel_end" jdbcType="BIGINT" property="fuelEnd" />
+    <result column="fuel_start" jdbcType="BIGINT" property="fuelStart" />
+    <result column="sequence_code" jdbcType="VARCHAR" property="sequenceCode" />
+    <result column="model_type" jdbcType="VARCHAR" property="modelType" />
+    <result column="install_type" jdbcType="VARCHAR" property="installType" />
+    <result column="fuel_set_val" jdbcType="DOUBLE" property="fuelSetVal" />
+    <result column="fuel_real_val" jdbcType="DOUBLE" property="fuelRealVal" />
+    <result column="tag_real_val" jdbcType="DOUBLE" property="tagRealVal" />
+    <result column="oper_id" jdbcType="INTEGER" property="operId" />
+    <result column="create_time" jdbcType="BIGINT" property="createTime" />
+  </resultMap>
+</mapper>
