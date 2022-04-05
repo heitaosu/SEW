@@ -35,17 +35,22 @@ public class UserController {
         if (user.getId() != null){
             User oldUser = userService.findById(user.getId());
             if (oldUser != null){
-                if (!oldUser.getUsername().equals(user.getUsername())){
-                    return ResultGenerator.genFailResult("用户名不能修改");
+                if(0 == user.getState()){ //删除的情况
+                    oldUser.setState(0);
+                    userService.update(oldUser);
+                }else{  //修改的情况
+                    if (!oldUser.getUsername().equals(user.getUsername())){
+                        return ResultGenerator.genFailResult("用户名不能修改");
+                    }
+                    if (StringUtils.isEmpty(user.getPassword())){
+                        user.setPassword(oldUser.getPassword());
+                    }
+                    userService.update(user);
                 }
-                if (StringUtils.isEmpty(user.getPassword())){
-                    user.setPassword(oldUser.getPassword());
-                }
-                userService.update(user);
             }else {
                 return ResultGenerator.genFailResult("修改的用户不存在 id="+user.getId());
             }
-        }else{
+        }else{ //新增的情况
             User oldUser = userService.findByUserName(user.getUsername());
             if (oldUser != null){
                 return ResultGenerator.genFailResult("已经存在用户名为:"+user.getUsername()+"的用户,请重新填写");
@@ -85,7 +90,7 @@ public class UserController {
      * @return
      */
     @PostMapping("/login.json")
-    public Result login(@RequestParam String username, @RequestParam String password) {
+    public Result login(@RequestParam(required=true) String username, @RequestParam(required=true) String password) {
         //身份验证是否成功
         User user = userService.findByUserName(username);
         if (user == null || user.getState() == 0 || !password.equals(user.getPassword())){

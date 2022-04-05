@@ -3,6 +3,7 @@ package com.conpany.project;
 import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.util.FileUtils;
 import com.alibaba.excel.util.ListUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -42,6 +43,9 @@ public class ExcelTest {
     }
 
     public static void main(String[] args) throws IOException {
+        boolean ss = StringUtils.isNumeric("444.7886");
+        System.out.println(ss);
+
         File file = new File("D:\\51463460.001");
         byte[] bytes = FileUtils.readFileToByteArray(file);
         String str = new String(bytes);

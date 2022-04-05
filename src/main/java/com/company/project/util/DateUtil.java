@@ -846,17 +846,50 @@ public class DateUtil {
      * @return 相差天数。如果失败则返回-1
      */
     public static int getIntervalDays(Date date, Date otherDate) {
+        long time = getIntervalTime(date,otherDate);
         int num = -1;
+        if (time != -1l){
+            num = (int) (time / (24 * 60 * 60 * 1000));
+        }
+        return num;
+    }
+
+    /**
+     * @param date
+     *            日期
+     * @param otherDate
+     *            另一个日期
+     * @return 相差分钟数。如果失败则返回-1
+     */
+    public static int getIntervalMinutes(Date date, Date otherDate) {
+        long time = getIntervalTime(date,otherDate);
+        int num = -1;
+        if (time != -1l){
+            num = (int) (time / (60 * 1000));
+        }
+        return num;
+    }
+
+    /**
+     * @param date
+     *            日期
+     * @param otherDate
+     *            另一个日期
+     * @return 相差时间毫秒数。如果失败则返回-1
+     */
+    public static long getIntervalTime(Date date, Date otherDate) {
+        long num = -1;
         Date dateTmp = DateUtil.StringToDate(DateUtil.getDate(date),
                 DateStyle.YYYY_MM_DD);
         Date otherDateTmp = DateUtil.StringToDate(DateUtil.getDate(otherDate),
                 DateStyle.YYYY_MM_DD);
         if (dateTmp != null && otherDateTmp != null) {
             long time = Math.abs(dateTmp.getTime() - otherDateTmp.getTime());
-            num = (int) (time / (24 * 60 * 60 * 1000));
+            num =  time;
         }
         return num;
     }
+
 
     /**
      * 获取期间的年龄

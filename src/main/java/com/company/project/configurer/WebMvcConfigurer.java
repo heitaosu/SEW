@@ -45,6 +45,7 @@ class WebMvcConfigurer implements org.springframework.web.servlet.config.annotat
     private final Logger logger = LoggerFactory.getLogger(WebMvcConfigurer.class);
     @Value("${spring.profiles.active}")
     private String env;//当前激活的配置文件
+    private CorsRegistry registry;
 
     /**
      * 项目首页跳转至 index.html
@@ -119,10 +120,12 @@ class WebMvcConfigurer implements org.springframework.web.servlet.config.annotat
         registry.addInterceptor(new TokenInterceptor()).addPathPatterns("/**")
                 .excludePathPatterns("/**/login.json")
                 .excludePathPatterns("/**/loginout.json")
-                .excludePathPatterns("/","/static/**");
+                .excludePathPatterns("/","/static/**")
+                .excludePathPatterns("/**/test*.json")
+                .excludePathPatterns("/freeswitch/**");
 
         //接口签名认证拦截器，该签名认证比较简单，实际项目中可以使用Json Web Token或其他更好的方式替代。
-        if (!"dev".equals(env)) { //开发环境忽略签名认证
+     /*   if (!"dev".equals(env)) { //开发环境忽略签名认证
             registry.addInterceptor(new HandlerInterceptorAdapter() {
                 @Override
                 public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
@@ -141,7 +144,7 @@ class WebMvcConfigurer implements org.springframework.web.servlet.config.annotat
                     }
                 }
             });
-        }
+        }*/
     }
 
     private void responseResult(HttpServletResponse response, Result result) {

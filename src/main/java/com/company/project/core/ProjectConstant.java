@@ -13,4 +13,12 @@ public final class ProjectConstant {
     public static final String CONTROLLER_PACKAGE = BASE_PACKAGE + ".web";//生成的Controller所在包
 
     public static final String MAPPER_INTERFACE_REFERENCE = BASE_PACKAGE + ".core.Mapper";//Mapper插件基础接口的完全限定名
+
+    //
+    public static final String BTN_EVENT_CHANNEL = "btn.event.channel";
+    public static final String ALARM_EVENT_CHANNEL = "alarm.event.channel";
+    //warn:告警提醒消息,btn:按钮类型的数值,val:显示或者设置的值,alert:给用户弹窗提醒(需要页面alert弹窗提醒)
+    public static final String[] VAL_ARRAY = new String[]{"warn_%s_%s","btn_%s_%s","val_%s_%s","alert_s%_s%"};
+
+
 }

@@ -22,6 +22,7 @@ public class TokenInterceptor implements HandlerInterceptor {
             throws Exception {
         response.setCharacterEncoding("utf-8");
         String token = request.getHeader("access_token");
+        System.out.println("preHandle token="+token);
         //token不存在
         if (null != token) {
             //验证token是否正确
