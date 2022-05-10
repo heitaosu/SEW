@@ -1,6 +1,5 @@
 package com.company.project.listener;
 
-import com.company.project.core.IGlobalCache;
 import com.company.project.core.ProjectConstant;
 import com.company.project.model.FuelAlarm;
 import com.company.project.model.FuelState;
@@ -24,9 +23,6 @@ import java.util.Date;
 public class RedisMessageListener {
 
     @Autowired
-    private IGlobalCache globalCache;
-
-    @Autowired
     private PushService pushService;
 
     @Bean
@@ -47,10 +43,18 @@ public class RedisMessageListener {
         return new MessageListenerAdapter(new AlarmReceiver(),"receiveMessage");
     }
 
+    /**
+     * 输入值 e.g:
+     *       alert.resettart.btn:True
+     *       expected.oil.pressure:888
+     *
+     * 输出值 e.g:
+     *       btn_1_1
+     *       val_1_888
+     */
     // alarm_1_2022-03-22 12:00:00 抽油油箱液位低报警
     class AlarmReceiver {
         public void receiveMessage(String message) {
-            System.out.println("message="+message);
             try {
                 //去掉引号
                 message = message.replace("\"", "");
@@ -62,8 +66,13 @@ public class RedisMessageListener {
                             String dateStr = DateUtil.DateToString(new Date(),DateUtil.DateStyle.YYYY_MM_DD_HH_MM_SS) + " " + alarm.getMsg();
                             String msg = String.format(ProjectConstant.VAL_ARRAY[0], ""+alarm.getType(),dateStr);
                             pushService.pushMsgToAll(msg);
-                            System.out.println("pushMsgToAll msg="+msg);
                         }
+                    }
+                }
+                for (FuelValue val : FuelValue.values()){
+                    if (val.getSwitchKey().equals(msgs[0])){
+                        String msg = String.format(ProjectConstant.VAL_ARRAY[2], val.getState(),msgs[1]);
+                        pushService.pushMsgToAll(msg);
                     }
                 }
             }catch (Exception e){
@@ -89,7 +98,6 @@ public class RedisMessageListener {
      */
     class Receiver {
         public void receiveMessage(String message) {
-            System.out.println("message="+message);
             //去掉引号
             message = message.replace("\"", "");
             String[] msgs = message.split(":");
@@ -98,16 +106,6 @@ public class RedisMessageListener {
                     String v = Boolean.valueOf(msgs[1]) ?  "1" : "0";
                     String msg = String.format(ProjectConstant.VAL_ARRAY[1], btn.getState(),v);
                     pushService.pushMsgToAll(msg);
-                    globalCache.set(msgs[0],v);
-                    System.out.println("pushMsgToAll msg="+msg);
-                }
-            }
-            for (FuelValue val : FuelValue.values()){
-                if (val.getSwitchKey().equals(msgs[0])){
-                    String msg = String.format(ProjectConstant.VAL_ARRAY[2], val.getState(),msgs[1]);
-                    pushService.pushMsgToAll(msg);
-                    globalCache.set(msgs[0],msg);
-                    System.out.println("pushMsgToAll msg="+msg);
                 }
             }
         }

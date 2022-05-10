@@ -22,6 +22,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/user")
 public class UserController {
+
     @Resource
     private UserService userService;
 
@@ -35,7 +36,7 @@ public class UserController {
         if (user.getId() != null){
             User oldUser = userService.findById(user.getId());
             if (oldUser != null){
-                if(0 == user.getState()){ //删除的情况
+                if(user.getState() != null && 0 == user.getState()){ //删除的情况
                     oldUser.setState(0);
                     userService.update(oldUser);
                 }else{  //修改的情况
@@ -71,14 +72,7 @@ public class UserController {
     @GetMapping("/list.json")
     public Result list(HttpServletRequest request, @RequestParam(defaultValue = "1") Integer page, @RequestParam(defaultValue = "10") Integer size) {
         PageHelper.startPage(page, size);
-        List<User> list = userService.findAll();
-       /* Iterator<User> iterator = list.iterator();
-        while (iterator.hasNext()) {
-            User user = iterator.next();
-            if (user.getState() == 0) {
-                iterator.remove();
-            }
-        }*/
+        List<User> list = userService.findUser(1);
         PageInfo pageInfo = new PageInfo(list);
         return ResultGenerator.genSuccessResult(pageInfo);
     }

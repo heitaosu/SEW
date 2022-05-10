@@ -1,35 +1,52 @@
 package com.company.project.service.impl;
 
 import com.alibaba.excel.util.StringUtils;
+import com.company.project.configurer.ProjectConfig;
 import com.company.project.core.AbstractService;
-import com.company.project.core.ProjectConstant;
+import com.company.project.core.IGlobalCache;
 import com.company.project.core.ServiceException;
 import com.company.project.dao.FuelRecordMapper;
 import com.company.project.model.FuelRecord;
+import com.company.project.model.FuelRecordDO;
+import com.company.project.model.FuelValue;
 import com.company.project.service.FuelRecordService;
-import com.company.project.util.DateUtil;
 import com.company.project.util.FileUtil;
 import com.company.project.util.SmbUtil;
-import com.company.project.websocket.PushService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
+import java.text.NumberFormat;
 import java.util.Date;
+import java.util.List;
 
 
 /**
  * Created by CodeGenerator on 2022/03/21.
  */
+@Slf4j
 @Service
 @Transactional
 public class FuelRecordServiceImpl extends AbstractService<FuelRecord> implements FuelRecordService {
+
     @Resource
     private FuelRecordMapper fuelRecordMapper;
+    @Resource
+    private IGlobalCache globalCache;
+    @Resource
+    private ProjectConfig projectConfig;
 
-    @Autowired
-    private PushService pushService;
+    public static NumberFormat nf = NumberFormat.getNumberInstance();
+
+    //存储铭牌的位置的文件夹
+    private String REMOTE_WRITE_MP_DIR = "\\mp\\";
+    // 读文件的共享盘 读文件的目标基础路径
+    private String REMOTE_READ_DIR = "\\E25\\025\\@1\\";
+    // 写文件的文件名后缀
+    private String FILE_NAME_SUF = ".001";
+    //一个空格符
+    private String STR_BLANK_SYM = " ";
 
     // 当前是否在扫码注油(判断扫码注油有没有结束 false:表示当前扫码加油没有结束 true:表示当前扫码注油已经结束)
     private boolean scan_is_end = true;
@@ -40,16 +57,15 @@ public class FuelRecordServiceImpl extends AbstractService<FuelRecord> implement
     // 扫码操作的操作人id
     private Integer scan_oper_id = null;
 
-
-
     /**
      *
-     * @param scanCode  传扫码的订单号
+     * @param scanCode 传扫码的订单号
+     * @param operId   操作人ID
      */
     @Override
     public void scanStart(String scanCode,Integer operId) {
         if (StringUtils.isEmpty(scanCode)){
-            throw new ServiceException("scanCode 不能为空");
+            throw new ServiceException("扫码的订单号不能为空");
         }
         if (operId == null){
             throw new ServiceException("operId 不能为空");
@@ -57,7 +73,7 @@ public class FuelRecordServiceImpl extends AbstractService<FuelRecord> implement
         scan_is_end = false;
         scan_start_code = scanCode;
         scan_start_date = new Date();
-        this.startTimer();
+        scan_oper_id = operId;
     }
 
     @Override
@@ -85,37 +101,53 @@ public class FuelRecordServiceImpl extends AbstractService<FuelRecord> implement
         return scan_start_date;
     }
 
+    @Override
     public Integer getScanOperId() {
         return scan_oper_id;
     }
 
     /**
-     * 点加油完成按钮操作
-     * 如果返回值不为空 则操作失败 失败信息存储在返回值中
+     * 查询某个时间段 扫码加油的数据
+     * @param createTimeStart
+     * @param createTimeEnd
      * @return
      */
-  /*  @Override
-    public String fuelComplete(Integer userId) {
-        String code = getScanCode();
-        String str = getRemoteFileContent(code);
-        FuelRecord fuelRecord = stringTransformBean(str,code);
-        this.save(fuelRecord);
-        String writeFileContent = fuelRecord.getFuelRealVal() + " " + fuelRecord.getFuelStart() + " " + fuelRecord.getFuelEnd();
-        FileUtil.writeContent("D:\\",code+".001",writeFileContent);
-        this.scanEnd();
-        return  null;
-    }*/
-
     @Override
-    public String fuelComplete(Integer userId) {
-        String code = getScanCode();
-        FuelRecord fuelRecord = new FuelRecord();
-        fuelRecord.setWorkOrder(Long.valueOf(code));
-        fuelRecord.setModelType("55666");
+    public List<FuelRecordDO> findByCreateTime(long createTimeStart, long createTimeEnd) {
+        return fuelRecordMapper.findByCreateTime(createTimeStart,createTimeEnd);
+    }
 
-        this.save(fuelRecord);
-        String writeFileContent = fuelRecord.getFuelRealVal() + " " + fuelRecord.getFuelStart() + " " + fuelRecord.getFuelEnd();
-        FileUtil.writeContent("D:\\",code+".001",writeFileContent);
+    /**
+     * 扫码加油完成
+     * @param userId
+     * @param realName 操作人真实姓名
+     * @return
+     */
+    @Override
+    public String fuelComplete(Integer userId,String realName) {
+        if (scanIsEnd()){
+            this.scanEnd();
+            log.error("fuelComplete 当前机器没有已扫码的机器在加油");
+            return  null;
+        }
+        String code = getScanCode();
+        String fileContent = getReadRemoteFileContent(code);
+        if (StringUtils.isEmpty(fileContent)){
+            throw new ServiceException("该订单号不存在,请检查远程订单文件是否存在,订单id=" + code);
+        }
+        FuelRecord fuelRecord = stringTransformBean(fileContent,code);
+        String fileName = code + FILE_NAME_SUF;
+        String writeFileContent = fuelRecord.getFuelRealVal() + STR_BLANK_SYM + fuelRecord.getFuelStart() + STR_BLANK_SYM + fuelRecord.getFuelEnd() + STR_BLANK_SYM + realName;
+        //将需要铭牌打印的信息输出到本地文件
+        FileUtil.writeContent(projectConfig.getSYSTEM_SEW_WRITE_FILE_DIR(),fileName,writeFileContent,false);
+        String localAllFileName = projectConfig.getSYSTEM_SEW_WRITE_FILE_DIR() + fileName;
+        //将本地的铭牌信息同步到共享文件盘
+        try {
+            SmbUtil.uploadFile(projectConfig.getSMB_WRITE_REMOTE_HOST(), projectConfig.getSMB_WRITE_USERNAME(),projectConfig.getSMB_WRITE_PASSWORD(),projectConfig.getSMB_WRITE_SHARE_PATH(), projectConfig.getSMB_WRITE_SHARE_BASEDIR() + REMOTE_WRITE_MP_DIR,localAllFileName);
+            this.save(fuelRecord);
+        }catch (Exception e){
+            throw new ServiceException("上传铭牌打印的信息到共享盘时出错,请检查本地网络连接或者共享盘是否正常");
+        }
         this.scanEnd();
         return  null;
     }
@@ -125,9 +157,17 @@ public class FuelRecordServiceImpl extends AbstractService<FuelRecord> implement
      * @param code
      * @return
      */
-    private String getRemoteFileContent(String code){
-        String yyyyMM = DateUtil.DateToString(new Date(),DateUtil.DateStyle.YYYYMM);
-        return SmbUtil.readOneFileString(SmbUtil.SMB_REMOTE_HOST,SmbUtil.SMB_USERNAME,SmbUtil.SMB_PASSWORD,SmbUtil.SMB_SHARE_PATH+yyyyMM,"",code+".001");
+    @Override
+    public String getReadRemoteFileContent(String code){
+        String content = null;
+        try{
+            String fileName = code + FILE_NAME_SUF;
+            log.error("getReadRemoteFileContent fileName="+fileName);
+            content = SmbUtil.readOneFileString(projectConfig.getSMB_READ_REMOTE_HOST(),projectConfig.getSMB_READ_USERNAME(),projectConfig.getSMB_READ_PASSWORD(),projectConfig.getSMB_READ_SHARE_PATH(),REMOTE_READ_DIR,fileName);
+        }catch(Exception e){
+            log.error(e.getMessage());
+        }
+        return content;
     }
 
     /**
@@ -137,41 +177,41 @@ public class FuelRecordServiceImpl extends AbstractService<FuelRecord> implement
      */
     private FuelRecord stringTransformBean(String fileContent,String code){
         //处理文件内容多余的空格
-        fileContent = fileContent.replaceAll( "\\s+", " ");
-        fileContent = fileContent.replace(" ","_");
+        fileContent = fileContent.replaceAll( "\\s+", STR_BLANK_SYM);
+        fileContent = fileContent.replace(STR_BLANK_SYM,"_");
         String[] array = fileContent.split("_");
         FuelRecord fuelRecord = new FuelRecord();
-        fuelRecord.setWorkOrder(Long.valueOf(code));
-        fuelRecord.setInstallType(array[15]);
-        fuelRecord.setModelType(array[1]);
-        fuelRecord.setSequenceCode(array[3]);
-        return fuelRecord;
-    }
+        try {
+            Double dval = Double.valueOf(globalCache.get(FuelValue.FUEL_STATE_62.getSwitchKey()).toString());
+            nf.setMaximumFractionDigits(2);
+            //注油量实际值
+            fuelRecord.setFuelRealVal(Double.valueOf(nf.format(dval)));
 
-    /**
-     * 异步方法 计时器计算加油时长 如果超过的规定时长则强制结束加油
-     */
-    public void startTimer(){
-        new Thread(new Runnable() {
-            @Override
-             public void run() {
-                Date date = new Date();
-                for (int i = 0; i < 30; i++){
-                    date.setTime(System.currentTimeMillis());
-                    int minutes = DateUtil.getIntervalMinutes(getScanDate(),date);
-                    if (minutes >= 30){
-                        fuelComplete(getScanOperId());
-                        pushService.pushMsgToAll(String.format(ProjectConstant.VAL_ARRAY[3], "1","扫码加油在规定的时间内没有点击扫码完成按钮,系统自动完成,请确认"));
-                        break;
-                    }
-                    try {
-                        //一分钟检测一次
-                        Thread.sleep(1000l*60);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-                             }
-        }).start();
+            Double svval = Double.valueOf(globalCache.get(FuelValue.FUEL_STATE_53.getSwitchKey()).toString());
+            nf.setMaximumFractionDigits(1);
+            //注油量设定值
+            fuelRecord.setFuelSetVal(Double.valueOf(nf.format(svval)));
+            nf.setMaximumFractionDigits(0);
+            //上传到铭牌的注油量
+            fuelRecord.setTagRealVal(Double.valueOf(nf.format(dval)));
+        }catch (Exception e){
+            throw new ServiceException("获取缓存中的实际注油量不正确,请检查,如果强制完成请尝试修改实际注油量后,再次点击次按钮完成");
+        }
+        fuelRecord.setCreateTime(System.currentTimeMillis());
+        fuelRecord.setFuelStart(scan_start_date.getTime());
+        fuelRecord.setFuelEnd(System.currentTimeMillis());
+        fuelRecord.setWorkOrder(Long.valueOf(code));
+        try {
+            //安装方式
+            fuelRecord.setInstallType(array[15]);
+            //型号
+            fuelRecord.setModelType(array[1]);
+            //序列号
+            fuelRecord.setSequenceCode(array[3]);
+        }catch (Exception e){
+            throw new ServiceException("获取共享盘中的订单信息[安装方式、型号、序列号]不正确,请检查共享盘中的订单信息或者订单信息或格式是否已经变更");
+        }
+        fuelRecord.setOperId(scan_oper_id);
+        return fuelRecord;
     }
 }

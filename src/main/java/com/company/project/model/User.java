@@ -24,7 +24,7 @@ public class User {
     @Column(name = "register_date")
     private long registerDate;
 
-    //状态 0:无效(未删除)  1:有效(未删除)
+    //状态 0:无效(已删除)  1:有效(未删除)
     private Integer state;
 
     /**

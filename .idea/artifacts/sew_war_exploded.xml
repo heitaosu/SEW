@@ -6,6 +6,7 @@
         <exploded>true</exploded>
         <module>sew</module>
         <packaging>war</packaging>
+        <unpackNestedArchives>false</unpackNestedArchives>
       </options>
     </properties>
     <root id="root">
@@ -89,8 +90,7 @@
           <element id="library" level="project" name="Maven: com.fasterxml.jackson.core:jackson-databind:2.9.9" />
           <element id="library" level="project" name="Maven: com.fasterxml.jackson.core:jackson-annotations:2.9.0" />
           <element id="library" level="project" name="Maven: com.fasterxml.jackson.core:jackson-core:2.9.9" />
-          <element id="library" level="project" name="Maven: org.projectlombok:lombok:1.18.22" />
-          <element id="library" level="project" name="Maven: org.samba.jcifs:jcifs:1.3.3" />
+          <element id="library" level="project" name="Maven: org.projectlombok:lombok:1.18.24" />
           <element id="library" level="project" name="Maven: io.netty:netty-all:4.1.43.Final" />
           <element id="library" level="project" name="Maven: com.alibaba:easyexcel:3.0.5" />
           <element id="library" level="project" name="Maven: org.apache.poi:poi:4.1.2" />
@@ -106,10 +106,10 @@
           <element id="library" level="project" name="Maven: cglib:cglib:3.3.0" />
           <element id="library" level="project" name="Maven: org.ow2.asm:asm:7.1" />
           <element id="library" level="project" name="Maven: org.ehcache:ehcache:3.6.3" />
-          <element id="library" level="project" name="Maven: com.hierynomus:smbj:0.10.0" />
-          <element id="library" level="project" name="Maven: org.bouncycastle:bcprov-jdk15on:1.60" />
+          <element id="library" level="project" name="Maven: com.hierynomus:smbj:0.11.5" />
+          <element id="library" level="project" name="Maven: org.bouncycastle:bcprov-jdk15on:1.70" />
           <element id="library" level="project" name="Maven: net.engio:mbassador:1.3.0" />
-          <element id="library" level="project" name="Maven: com.hierynomus:asn-one:0.4.0" />
+          <element id="library" level="project" name="Maven: com.hierynomus:asn-one:0.6.0" />
         </element>
       </element>
       <element id="directory" name="META-INF">

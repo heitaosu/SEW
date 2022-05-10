@@ -3,14 +3,11 @@ package com.company.project.util;
 /**
  *
  */
+import java.lang.ref.PhantomReference;
+import java.lang.ref.SoftReference;
 import java.text.ParsePosition;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  *
@@ -1007,4 +1004,91 @@ public class DateUtil {
             return number;
         }
     }
+
+    /**
+     * 返回某个月份第一天的 00:00:00 的时间字符串 如（2022-05-01 00:00:00）
+     * @param month
+     * @return
+     */
+    public static String getFirstDayOfMonth(int month) {
+        Calendar calendar = Calendar.getInstance();
+        // 设置月份
+        calendar.set(Calendar.MONTH, month - 1);
+        // 获取某月最小天数
+        int firstDay = calendar.getActualMinimum(Calendar.DAY_OF_MONTH);
+        // 设置日历中月份的最小天数
+        calendar.set(Calendar.DAY_OF_MONTH, firstDay);
+        // 格式化日期
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        String firstDay1 = sdf.format(calendar.getTime())+" 00:00:00";
+        return firstDay1;
+    }
+
+    /**
+     * 返回某个月份最后一天的 23:59:59 的时间字符串 如（2022-05-31 23:59:59）
+     * @param month
+     * @return
+     */
+    public static String getLastDayOfMonth(int month) {
+        Calendar calendar = Calendar.getInstance();
+        // 设置月份
+        calendar.set(Calendar.MONTH, month - 1);
+        // 获取某月最大天数
+        int lastDay=0;
+        //2月的平年瑞年天数
+        if(month==2) {
+            lastDay = calendar.getLeastMaximum(Calendar.DAY_OF_MONTH);
+        }else {
+            lastDay = calendar.getActualMaximum(Calendar.DAY_OF_MONTH);
+        }
+        // 设置日历中月份的最大天数
+        calendar.set(Calendar.DAY_OF_MONTH, lastDay);
+        // 格式化日期
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        String lastDay1 = sdf.format(calendar.getTime())+" 23:59:59";
+        return lastDay1;
+    }
+
+    /**
+     * 比较两个时间的差值  然后算出总共花了多少小时 多少分钟 多少 秒的时间
+     * 结果行如 21:58:45
+     * @param endTime
+     * @param startTime
+     * @return
+     */
+    public static String getIntervaHMS(Date endTime,Date startTime) {
+        long interval = endTime.getTime()-startTime.getTime();
+        //然后在将毫秒转换为date类型就可以了
+        SimpleDateFormat formatter = new SimpleDateFormat(DateStyle.HH_MM_SS.value);//初始化Formatter的转换格式。
+        formatter.setTimeZone(TimeZone.getTimeZone("GMT+00:00"));
+        String hms = formatter.format(interval);
+        return hms;
+    }
+
+
+
+    public static void main(String[] args) {
+
+        Date mouthDay =  DateUtil.StringToDate(getFirstDayOfMonth(5),DateStyle.YYYY_MM_DD_HH_MM_SS);
+
+        String sss = getIntervaHMS(new Date(1651366890000l),new Date(1651273215000l));
+        System.out.println(sss);
+        System.out.println("mouthDay="+mouthDay.getTime());
+
+        String firstDay1 = getFirstDayOfMonth(5);
+        System.out.println(firstDay1);
+        "".intern();
+        String ss = new String("ssffffff");
+        System.out.println(ss);
+        SoftReference<String> sr = new SoftReference<>(ss);
+        System.out.println(ss);
+
+        String pts = new String("ptss");
+        PhantomReference<String> pt = new PhantomReference<>(pts,null);
+
+        String rpts = pts;
+        System.out.println(pts);
+        System.out.println(rpts);
+    }
+
 }

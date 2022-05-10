@@ -16,7 +16,11 @@
 
   <select id="findByUserName" parameterType="string" resultType="com.company.project.model.User">
     select id,username,password,real_name as realName,user_level as userLevel,register_date as registerDate, `state`
-    from `user` where username=#{username}
+    from `user` where `state`=1 and username=#{username}
   </select>
 
+  <select id="findUser" parameterType="int" resultType="com.company.project.model.User">
+    select id,username,real_name as realName,user_level as userLevel,register_date as registerDate, `state`
+    from `user` where `state`=#{state}
+  </select>
 </mapper>

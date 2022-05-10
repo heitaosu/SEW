@@ -1,8 +1,10 @@
 package com.company.project.service;
 import com.company.project.model.FuelRecord;
 import com.company.project.core.Service;
+import com.company.project.model.FuelRecordDO;
 
 import java.util.Date;
+import java.util.List;
 
 
 /**
@@ -20,7 +22,7 @@ public interface FuelRecordService extends Service<FuelRecord> {
      * 如果返回值不为空 则操作失败 失败信息存储在返回值中
      * @return
      */
-    public String fuelComplete(Integer userId);
+    public String fuelComplete(Integer userId,String realName);
 
     /**
      * 扫码加油开始 触发的事件
@@ -35,4 +37,15 @@ public interface FuelRecordService extends Service<FuelRecord> {
      * @return
      */
     public boolean scanIsEnd();
+
+    /**
+     * 获取远程文件的内容
+     * @param code
+     * @return
+     */
+    public String getReadRemoteFileContent(String code);
+
+    public Integer getScanOperId();
+
+    public List<FuelRecordDO> findByCreateTime(long createTimeStart, long createTimeEnd);
 }

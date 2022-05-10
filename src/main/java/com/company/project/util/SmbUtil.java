@@ -1,7 +1,5 @@
 package com.company.project.util;
 
-import com.alibaba.excel.util.StringUtils;
-import com.alibaba.fastjson.util.IOUtils;
 import com.hierynomus.msdtyp.AccessMask;
 import com.hierynomus.msfscc.FileAttributes;
 import com.hierynomus.msfscc.fileinformation.FileIdBothDirectoryInformation;
@@ -21,7 +19,6 @@ import org.springframework.context.annotation.Configuration;
 
 import java.io.*;
 import java.net.SocketTimeoutException;
-import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Set;
@@ -30,16 +27,20 @@ import java.util.concurrent.TimeUnit;
 @Configuration
 public class SmbUtil {
 
-    @Value("${smb.remote.host}")
-    public static final String SMB_REMOTE_HOST = "192.168.2.250"; // 共享服务器IP
+   /* @Value("${smb.remote.host}")
+    public String SMB_REMOTE_HOST = ""; // 共享服务器IP
     @Value("${smb.username}")
     //public static final String SMB_USERNAME = "cn1zhayoz"; // SMB 协议用户名
-    public static final String SMB_USERNAME = ""; // SMB 协议用户名
+    public String SMB_USERNAME = ""; // SMB 协议用户名
     @Value("${smb.password}")
     //public static final String SMB_PASSWORD = "Zy202203"; // SMB 协议用户密码
-    public static final String SMB_PASSWORD = ""; // SMB 协议用户密码
+    public String SMB_PASSWORD = ""; // SMB 协议用户密码
     @Value("${smb.share.path}")
-    public static final String SMB_SHARE_PATH = "test"; // 共享目录
+    public String SMB_SHARE_PATH = ""; // 共享目录*/
+
+    //共享盘的域名
+    @Value("${smb.remote.domain ?: cn.eu.sew}")
+    private static String SMB_REMOTE_DOMAIN;
 
     private static SMBClient client = null;
 
@@ -57,14 +58,8 @@ public class SmbUtil {
         DiskShare share = null;
         try {
             Connection connection = client.connect(host);// 执行连接
-            AuthenticationContext ac;
-            if (!StringUtils.isEmpty(username)){
-                ac = new AuthenticationContext(username, password.toCharArray(), host);
-            }else {
-                ac = AuthenticationContext.guest();
-            }
+            AuthenticationContext ac = new AuthenticationContext(username, password.toCharArray(), SMB_REMOTE_DOMAIN);
             Session session = connection.authenticate(ac); // 执行权限认证
-
             share = (DiskShare) session.connectShare(path); // 连接共享文件夹
             return share;
         } catch (SocketTimeoutException e) {
@@ -193,13 +188,12 @@ public class SmbUtil {
      * @param innerDir     需要存储的远程文件夹路径
      * @param localFileName  本地文件的全地址
      */
-    public static void uploadFile(String host, String username, String password, String path, String innerDir, String localFileName) {
-        DiskShare share = getDiskShare(host, username, password, path);
-
-        // 如果目录不存在，逐层创建
-        createRemoteDir(share, innerDir);
-
-        try {
+    public static void uploadFile(String host, String username, String password, String path, String innerDir, String localFileName) throws Exception {
+        OutputStream oStream = null;
+        try{
+            DiskShare share = getDiskShare(host, username, password, path);
+            // 如果目录不存在，逐层创建
+            createRemoteDir(share, innerDir);
 
             Set accessMasks = new HashSet<>();
             accessMasks.add(AccessMask.FILE_ADD_FILE);
@@ -211,12 +205,12 @@ public class SmbUtil {
             smb2CreateOptions.add(SMB2CreateOptions.FILE_RANDOM_ACCESS);
 
             // 文件名称
-            String fileName = innerDir + "/" + localFileName.substring(localFileName.lastIndexOf("/") + 1);
+            String fileName = innerDir + java.io.File.separator + localFileName.substring(localFileName.lastIndexOf(java.io.File.separator) + 1);
 
             System.out.println("上传文件: " + fileName);
 
             File openFile = share.openFile(fileName, accessMasks, attributes, smb2ShareAccesses, SMB2CreateDisposition.FILE_OVERWRITE_IF, smb2CreateOptions);
-            OutputStream oStream = openFile.getOutputStream();
+            oStream = openFile.getOutputStream();
             BufferedInputStream in = new BufferedInputStream(new FileInputStream(localFileName));
 
             byte[] buffer = new byte[1024];
@@ -224,15 +218,14 @@ public class SmbUtil {
             while ((len = in.read(buffer, 0, buffer.length)) != -1) {
                 oStream.write(buffer, 0, len);
             }
+            System.out.println("文件上传成功");
+        }finally {
             oStream.flush();
             oStream.close();
-            System.out.println("文件上传成功");
-        } catch (Exception e) {
-            System.out.println("文件上传失败");
-            e.printStackTrace();
+            closeClient();
         }
-    }
 
+    }
 
 
     private static String checkDirEnd(String dir) {
@@ -249,9 +242,7 @@ public class SmbUtil {
         if (dir.exists()) {
             return;
         }
-
         System.out.println("不存在目录" + dir);
-
         // 不存在，逐层创建
         String[] fileNameArr = dirName.split("/");
         String tempDirName = ""; // 逐层目录
@@ -318,21 +309,13 @@ public class SmbUtil {
         // 添加文件夹分隔符
         try {
             // TODO 远程文件夹
-            FileIdBothDirectoryInformation f = share.list(remoteDir, remoteFile).get(0);
-                String filePath = f.getFileName();
-                if (share.fileExists(filePath)) {
-                    System.out.println("正在下载文件: " + f.getFileName());
-                    File smbFileRead = share.openFile(filePath, EnumSet.of(AccessMask.GENERIC_READ), null, SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_OPEN, null);
-                    InputStream in = smbFileRead.getInputStream();
-                    StringBuilder sb = new StringBuilder();
-                    for (int ch; (ch = in.read()) != -1; ) {
-                        sb.append((char) ch);
-                    }
-                    return sb.toString();
-                } else {
-                    System.out.println("文件 " + filePath + " 不存在");
-                }
-                return  null;
+            File smbFileRead = share.openFile(remoteDir+remoteFile, EnumSet.of(AccessMask.GENERIC_READ), null, SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_OPEN, null);
+            InputStream in = smbFileRead.getInputStream();
+            StringBuilder sb = new StringBuilder();
+            for (int ch; (ch = in.read()) != -1; ) {
+                sb.append((char) ch);
+            }
+            return sb.toString();
         } catch (Exception e) {
             System.out.println("文件下载失败");
             e.printStackTrace();
@@ -341,11 +324,8 @@ public class SmbUtil {
     }
 
     public static void main(String[] args) {
-
-
-
         // 测试，展示远程共享目录下的文件里列表
-        SmbUtil.listFile(SMB_REMOTE_HOST, SMB_USERNAME, SMB_PASSWORD, SMB_SHARE_PATH, "E25");
+        //SmbUtil.listFile(SMB_REMOTE_HOST, SMB_USERNAME, SMB_PASSWORD, SMB_SHARE_PATH, "E25");
 
         // 测试，删除远程共享目录的文件(或文件夹)
 //        SmbUtil.removeFile(SMB_REMOTE_HOST, SMB_USERNAME, SMB_PASSWORD, SMB_SHARE_PATH, "b.txt");

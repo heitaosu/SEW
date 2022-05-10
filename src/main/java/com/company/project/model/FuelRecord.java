@@ -1,9 +1,15 @@
 package com.company.project.model;
 
+
+import com.alibaba.excel.annotation.ExcelProperty;
+import lombok.Data;
+
 import javax.persistence.*;
 
+@Data
 @Table(name = "fuel_record")
 public class FuelRecord {
+    @ExcelProperty("编号")
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
@@ -11,6 +17,7 @@ public class FuelRecord {
     /**
      * 工单号
      */
+    @ExcelProperty("订单id")
     @Column(name = "work_order")
     private Long workOrder;
 

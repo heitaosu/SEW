@@ -1,0 +1,14 @@
+\\10.9.8.40\x\SC\Public\18 注油机
+
+\\10.9.8.4\embossing\E25\025\@1
+
+
+C:\PLC-Release\PLCRouter.exe
+C:\nginx-1.20.2
+C:\tomcat-8.5
+C:\Program Files\MySQL\MySQL Server 5.6
+C:\Program Files\Redis-x64-3.0.504
+C:\Program Files\Java
+
+# win + R 运行 增加开机启动项
+shell:startup

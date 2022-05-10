@@ -2,7 +2,6 @@ package com.company.project.util;
 
 
 import java.io.*;
-import java.util.UUID;
 
 /**
  * @Title: FileUtil
@@ -23,6 +22,7 @@ public class FileUtil {
      * @return 是否创建成功，成功则返回true
      */
     public static boolean createFile(String filePath, String fileName) {
+        createDir(filePath);
         Boolean bool = false;
         filenameTemp = filePath + fileName;//文件路径+名称+文件类型
         File file = new File(filenameTemp);
@@ -44,20 +44,22 @@ public class FileUtil {
      *
      * @param fileName    文件名称
      * @param filecontent 文件内容
+     * @param append   如果原文件已经有内容是否将新内容追加到原文件中
      * @return 是否创建成功，成功则返回true
      */
-    public static boolean writeContent(String filePath, String fileName, String filecontent) {
+    public static boolean writeContent(String filePath, String fileName, String filecontent,boolean append) {
         Boolean bool = false;
         filenameTemp = filePath + fileName;//文件路径+名称
         File file = new File(filenameTemp);
         try {
+            createDir(filePath);
             //如果文件不存在，则创建新的文件
             if (!file.exists()) {
                 file.createNewFile();
                 bool = true;
             }
             //写入内容到文件里
-            writeFileContent(filenameTemp, filecontent);
+            writeFileContent(filenameTemp, filecontent,append);
         } catch (Exception e) {
             // TODO: handle exception
             e.printStackTrace();
@@ -71,10 +73,11 @@ public class FileUtil {
      *
      * @param filepath 文件路径与名称
      * @param newstr   写入的内容
+     * @param append   如果原文件已经有内容是否将新内容追加到原文件中
      * @return
      * @throws IOException
      */
-    public static boolean writeFileContent(String filepath, String newstr) throws IOException {
+    public static boolean writeFileContent(String filepath, String newstr, boolean append) throws IOException {
         Boolean bool = false;
         String filein = newstr + "\r\n";//新写入的行，换行
         String temp = "";
@@ -85,18 +88,20 @@ public class FileUtil {
         FileOutputStream fos = null;
         PrintWriter pw = null;
         try {
+            createDir(filepath);
             File file = new File(filepath);//文件路径(包括文件名称)
             //将文件读入输入流
             fis = new FileInputStream(file);
             isr = new InputStreamReader(fis);
             br = new BufferedReader(isr);
             StringBuffer buffer = new StringBuffer();
-
-            //文件原有内容
-            for (int i = 0; (temp = br.readLine()) != null; i++) {
-                buffer.append(temp);
-                // 行与行之间的分隔符 相当于“\n”
-                buffer = buffer.append(System.getProperty("line.separator"));
+            if (append){
+                //文件原有内容
+                for (int i = 0; (temp = br.readLine()) != null; i++) {
+                    buffer.append(temp);
+                    // 行与行之间的分隔符 相当于“\n”
+                    buffer = buffer.append(System.getProperty("line.separator"));
+                }
             }
             buffer.append(filein);
 
@@ -150,6 +155,20 @@ public class FileUtil {
             e.printStackTrace();
         }
         return bool;
+    }
+
+    /**
+     *  如果文件夹不存在就创建
+     * @param path
+     */
+    public static void createDir(String path) {
+        File dir = new File(path);
+        if(dir.exists() == true){
+            System.out.println("dirs is exists");
+        }else {
+            dir.mkdirs();
+            System.out.println(" created dirs");
+        }
     }
 
 }
