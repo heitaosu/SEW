@@ -4,8 +4,6 @@ package com.company.project.model;
 import com.alibaba.excel.annotation.ExcelProperty;
 import lombok.Data;
 
-import javax.persistence.*;
-
 @Data
 public class FuelRecordDO {
 
@@ -52,6 +50,12 @@ public class FuelRecordDO {
      */
     @ExcelProperty("型号")
     private String modelType;
+
+    /**
+     * 油品型号
+     */
+    @ExcelProperty("油品型号")
+    private String oilType;
 
     /**
      * 安装方式
@@ -177,5 +181,21 @@ public class FuelRecordDO {
 
     public void setOperName(String operName) {
         this.operName = operName;
+    }
+
+    public String getOilType() {
+        return oilType;
+    }
+
+    public void setOilType(String oilType) {
+        this.oilType = oilType;
+    }
+
+    public Integer getId() {
+        return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
     }
 }

@@ -9,4 +9,6 @@ import java.util.List;
 public interface FuelRecordMapper extends Mapper<FuelRecord> {
 
     public List<FuelRecordDO> findByCreateTime(long createTimeStart, long createTimeEnd);
+
+    public List<FuelRecordDO> findByWorkOrder(String workOrder);
 }

@@ -19,10 +19,10 @@ public enum FuelAlarm {
     /// 油箱液位低报警
     FUEL_STATE_87(87,"oillevel.low.alarm","注油油箱液位低报警"),
     /// 抽油邮箱液位高报警
-    FUEL_STATE_88(88,"v10_7","抽油邮箱液位高报警"),
-    FUEL_STATE_89(89,"v11_0","抽油邮箱液位低报警"),
-    FUEL_STATE_90(90,"v11_1","吸油压力传感器断线报警"),
-    FUEL_STATE_91(91,"v11_2","吸油滤油器堵塞报警");
+    FUEL_STATE_88(88,"pumping.high.alarm","抽油油箱液位高报警"),
+    FUEL_STATE_89(89,"pumping.low.alarm","抽油油箱液位低报警"),
+    FUEL_STATE_90(90,"pressure.sensor.alarm","吸油压力传感器断线报警"),
+    FUEL_STATE_91(91,"suction.filter.blocked.alarm","吸油滤油器堵塞报警");
     // #################### 报警状态 end ###################
 
     private int type;

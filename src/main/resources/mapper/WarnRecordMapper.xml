@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.company.project.dao.WarnRecordMapper">
+
+
+  <select id="findByCreateTime" resultType="com.company.project.model.WarnRecord">
+      select
+          `id` as `id`,
+          create_time createTime,
+          warn_type as warnType,
+          warn_msg as warnMsg
+      from warn_record
+      where create_time between #{createTimeStart} and #{createTimeEnd}
+      ORDER BY create_time DESC
+  </select>
+</mapper>

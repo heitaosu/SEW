@@ -5,6 +5,11 @@
 
 C:\PLC-Release\PLCRouter.exe
 C:\nginx-1.20.2
+# 后台打成服务的jar包
+C:\nginx-1.20.2\appsjava\crmapp-web.jar
+# 前端文件地址
+C:\nginx-1.20.2\apps\sew
+# 实际运行没有用tomcat
 C:\tomcat-8.5
 C:\Program Files\MySQL\MySQL Server 5.6
 C:\Program Files\Redis-x64-3.0.504
@@ -12,3 +17,17 @@ C:\Program Files\Java
 
 # win + R 运行 增加开机启动项
 shell:startup
+
+
+# redis 按钮数据测试
+# 消音按钮
+PUBLISH  btn.event.channel mute.btn:False
+PUBLISH  btn.event.channel mute.btn:True
+
+# 循环抽油
+PUBLISH  btn.event.channel loop.switch:True
+PUBLISH  btn.event.channel loop.switch:False
+
+# 手动加油开关
+PUBLISH btn.event.channel manual.status.btn:True
+PUBLISH btn.event.channel manual.status.btn:False

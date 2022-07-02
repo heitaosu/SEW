@@ -52,6 +52,12 @@ public class FuelRecord {
     private String installType;
 
     /**
+     * 油品型号
+     */
+    @Column(name = "oil_type")
+    private String oilType;
+
+    /**
      * 注油量设定值
      */
     @Column(name = "fuel_set_val")
@@ -284,6 +290,7 @@ public class FuelRecord {
         return createTime;
     }
 
+
     /**
      * 设置创建时间
      *
@@ -292,4 +299,13 @@ public class FuelRecord {
     public void setCreateTime(Long createTime) {
         this.createTime = createTime;
     }
+
+    public String getOilType() {
+        return oilType;
+    }
+
+    public void setOilType(String oilType) {
+        this.oilType = oilType;
+    }
+
 }

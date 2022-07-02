@@ -19,7 +19,24 @@ public enum FuelState {
     /// 循环OR注油开关
     FUEL_STATE_16(16,"loop.switch"),
     /// 消音按钮
-    FUEL_STATE_17(17,"mute.btn");
+    FUEL_STATE_17(17,"mute.btn"),
+    // 补油按钮 (2022-06-05新增)
+    FUEL_STATE_18(18,"oil.complement.btn"),
+    // 数据复位按钮 (2022-06-05新增)
+    FUEL_STATE_19(19,"sys.reset.btn"),
+    // 手动启停状态按钮 (该按钮不是真实的按钮，只是用来标识手动启停按钮的状态（开关） 2022-06-05新增)
+    FUEL_STATE_20(20,"manual.status.btn"),
+
+    PAGE_INSTALLTYPE_200(200,"page_installType_"),
+    PAGE_MODEL_201(201,"page_model_"),
+    PAGE_SEQUENCECODE_202(202,"page_sequenceCode_"),
+    PAGE_CODE_203(203,"page_code_"),
+    // 注油目标值
+    PAGE_CODE_204(204,"page_oilvolume_"),
+    // 吸油压力当前值
+    PAGE_CODE_205(205,"page_xiyouyalli_"),
+
+    PAGE_CODE_206(206,"page_loop.switch_");
 
 
     private int state;

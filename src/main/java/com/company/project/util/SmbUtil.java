@@ -1,7 +1,10 @@
 package com.company.project.util;
 
+import com.company.project.core.ServiceException;
 import com.hierynomus.msdtyp.AccessMask;
 import com.hierynomus.msfscc.FileAttributes;
+import com.hierynomus.msfscc.fileinformation.FileDirectoryInformation;
+import com.hierynomus.msfscc.fileinformation.FileDirectoryQueryableInformation;
 import com.hierynomus.msfscc.fileinformation.FileIdBothDirectoryInformation;
 import com.hierynomus.mssmb2.SMB2CreateDisposition;
 import com.hierynomus.mssmb2.SMB2CreateOptions;
@@ -14,14 +17,14 @@ import com.hierynomus.smbj.connection.Connection;
 import com.hierynomus.smbj.session.Session;
 import com.hierynomus.smbj.share.DiskShare;
 import com.hierynomus.smbj.share.File;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.util.CollectionUtils;
 
 import java.io.*;
 import java.net.SocketTimeoutException;
-import java.util.EnumSet;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 @Configuration
@@ -45,13 +48,13 @@ public class SmbUtil {
     private static SMBClient client = null;
 
     // 连接配置
-    private static SmbConfig config = SmbConfig.builder().withTimeout(120, TimeUnit.SECONDS)
-            .withTimeout(120, TimeUnit.SECONDS) // 超时设置读，写和Transact超时（默认为60秒）
-            .withSoTimeout(180, TimeUnit.SECONDS) // Socket超时（默认为0秒）
+    private static SmbConfig config = SmbConfig.builder().withTimeout(15, TimeUnit.SECONDS)
+            .withTimeout(15, TimeUnit.SECONDS) // 超时设置读，写和Transact超时（默认为60秒）
+            .withSoTimeout(15, TimeUnit.SECONDS) // Socket超时（默认为0秒）
             .build();
 
     // 获取分享的句柄  如果用户名为空则使用guest账户登录
-    private static DiskShare getDiskShare(String host, String username, String password, String path) {
+    private static DiskShare getDiskShare(String host, String username, String password, String path) throws ServiceException{
         if (client == null) {
             client = new SMBClient(config); // 创建连接客户端
         }
@@ -66,6 +69,7 @@ public class SmbUtil {
             // host 配置错误 connect timed out
             System.out.println(e.getMessage());
             System.out.println("执行远程连接是失败，请检查远程地址是否正确，或远程共享是否已开启");
+            throw new ServiceException("执行远程连接是失败，请检查远程地址是否正确，或远程共享是否已开启");
         } catch (SMBApiException e) {
             String errMessage = e.getMessage();
 
@@ -73,25 +77,29 @@ public class SmbUtil {
                 // Could not connect to
                 System.out.println(e.getMessage());
                 System.out.println("请检查共享目录是否正确");
+                errMessage= "请检查共享目录是否正确";
             }
 
             if (errMessage.contains("Authentication failed")) {
                 // Authentication failed
                 System.out.println(e.getMessage());
                 System.out.println("请检查连接用户名或密码是否正确");
+                errMessage = "请检查连接用户名或密码是否正确";
             }
 
             if (errMessage.contains("STATUS_OBJECT_NAME_NOT_FOUND")) {
                 // STATUS_OBJECT_NAME_NOT_FOUND
                 System.out.println(e.getMessage());
                 System.out.println("远程目录" + path + "不存在");
+                errMessage = "远程目录" + path + "不存在";
             }
+
+            throw new ServiceException(errMessage);
 
         } catch (Exception e) {
             e.printStackTrace();
+            throw new ServiceException("连接远程服务不正确,请检查");
         }
-
-        return share;
     }
 
 
@@ -102,7 +110,7 @@ public class SmbUtil {
         if (!share.folderExists(innerDir)) {
             System.out.println("远程目录" + innerDir + "不存在");
             closeClient(); // 关闭客户端
-            return;
+            throw new ServiceException("远程目录" + innerDir + "不存在");
         }
 
         System.out.println("Remote File List:");
@@ -115,6 +123,43 @@ public class SmbUtil {
         }
 
         closeClient(); // 关闭客户端
+    }
+
+
+    /**
+     * 在远程文件夹下面读取对应的文件，如果没有找到则在该文件夹下面的子文件夹中循环读取
+     * @param host
+     * @param username
+     * @param password
+     * @param path
+     * @param remoteDir
+     * @param remoteFile
+     * @return
+     */
+    public static String readOneFileOnDirTree(String host, String username, String password, String path, String remoteDir,String remoteFile)  throws ServiceException{
+        String content = SmbUtil.readOneFileString(host,username,password,path,remoteDir,remoteFile);
+        if (StringUtils.isEmpty(content)){
+            DiskShare share = getDiskShare(host, username, password, path);
+            List<String> listDir = new ArrayList<>();
+            for (FileDirectoryQueryableInformation f : share.list(remoteDir, FileDirectoryInformation.class)) {
+                String dir = f.getFileName();
+                if (dir.indexOf(".") < 0){
+                    listDir.add(dir+"\\");
+                }
+            }
+            if (!CollectionUtils.isEmpty(listDir)){
+                SmbUtil.sortByStartDigits(listDir);
+                for (String dirName : listDir){
+                    content = SmbUtil.readOneFileString(share,remoteDir+dirName,remoteFile);
+                    System.out.println("content="+content);
+                    if (!StringUtils.isEmpty(content)){
+                        break;
+                    }
+                }
+            }
+        }
+        closeClient(); // 关闭客户端
+        return content;
     }
 
 
@@ -173,6 +218,7 @@ public class SmbUtil {
         // TODO  是目录还是文件 share.rmdir();
         // TODO System.out.println("删除文件夹成功" + fileName);
         share.rm(fileName);
+
         System.out.println("删除文件" + fileName + "成功.");
 
         closeClient(); // 关闭客户端
@@ -304,9 +350,28 @@ public class SmbUtil {
         }
     }
 
-    public static String readOneFileString(String host, String username, String password, String path, String remoteDir,String remoteFile) {
+    static String readOneFileString(String host, String username, String password, String path, String remoteDir,String remoteFile)  throws ServiceException{
         DiskShare share = getDiskShare(host, username, password, path);
         // 添加文件夹分隔符
+        try {
+            // TODO 远程文件夹
+            File smbFileRead = share.openFile(remoteDir+remoteFile, EnumSet.of(AccessMask.GENERIC_READ), null, SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_OPEN, null);
+            InputStream in = smbFileRead.getInputStream();
+            StringBuilder sb = new StringBuilder();
+            for (int ch; (ch = in.read()) != -1; ) {
+                sb.append((char) ch);
+            }
+            return sb.toString();
+        } catch (Exception e) {
+            System.out.println("文件下载失败");
+            e.printStackTrace();
+            return  null;
+        }finally {
+            closeClient(); // 关闭客户端
+        }
+    }
+
+    static String readOneFileString(DiskShare share, String remoteDir,String remoteFile)  throws ServiceException {
         try {
             // TODO 远程文件夹
             File smbFileRead = share.openFile(remoteDir+remoteFile, EnumSet.of(AccessMask.GENERIC_READ), null, SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_OPEN, null);
@@ -323,12 +388,39 @@ public class SmbUtil {
         }
     }
 
+
+
+
+    /**
+     * 字符串的前4位排序
+     * @param list
+     */
+    static void sortByStartDigits(List<String> list) {
+        try {
+            Collections.sort(list, new Comparator<String>() {
+                @Override
+                public int compare(String s1, String s2) {
+                    int num1 = Integer.parseInt(s1.substring(0,4));
+                    int num2 = Integer.parseInt(s2.substring(0,4));
+                    return num2-num1;
+                }
+            });
+        }catch (Exception e){
+            System.out.println("文件夹名称前4位中包含非数字的字符无法排序");
+        }
+    }
+
     public static void main(String[] args) {
+        //String content = SmbUtil.readOneFileString("192.168.3.9","dell","dell","share","@1/","3444.001");
+
+        String content = SmbUtil.readOneFileOnDirTree("192.168.3.9","dell","dell","share","@1/","eerr.001");
+        System.out.println(content);
+
         // 测试，展示远程共享目录下的文件里列表
         //SmbUtil.listFile(SMB_REMOTE_HOST, SMB_USERNAME, SMB_PASSWORD, SMB_SHARE_PATH, "E25");
 
         // 测试，删除远程共享目录的文件(或文件夹)
-//        SmbUtil.removeFile(SMB_REMOTE_HOST, SMB_USERNAME, SMB_PASSWORD, SMB_SHARE_PATH, "b.txt");
+        //SmbUtil.removeFile(SMB_REMOTE_HOST, SMB_USERNAME, SMB_PASSWORD, SMB_SHARE_PATH, "b.txt");
 
         // 测试，上传文件到远程目录
         //SmbUtil.uploadFile(SMB_REMOTE_HOST, SMB_USERNAME, SMB_PASSWORD, SMB_SHARE_PATH, "202204/", "d:/1647746409709.xlsx");

@@ -28,6 +28,7 @@
           fr.work_order as workOrder,
           fr.sequence_code as sequenceCode,
           fr.model_type as modelType,
+          fr.oil_type as oilType,
           fr.install_type as installType,
           fr.fuel_set_val as fuelSetVal,
           fr.fuel_real_val as fuelRealVal,
@@ -36,4 +37,22 @@
       from fuel_record fr left join user us on fr.oper_id=us.id
       where fr.create_time between #{createTimeStart} and #{createTimeEnd}
   </select>
+
+    <select id="findByWorkOrder" resultType="com.company.project.model.FuelRecordDO">
+        select
+            fr.id as id,
+            FROM_UNIXTIME(fr.create_time/1000, '%Y-%m-%d') as createTime,
+            FROM_UNIXTIME(fr.fuel_start/1000, '%H:%i:%s') as fuelStart,
+            FROM_UNIXTIME(fr.fuel_end/1000, '%H:%i:%s') as fuelEnd,
+            fr.work_order as workOrder,
+            fr.sequence_code as sequenceCode,
+            fr.model_type as modelType,
+            fr.install_type as installType,
+            fr.fuel_set_val as fuelSetVal,
+            fr.fuel_real_val as fuelRealVal,
+            fr.tag_real_val as tagRealVal
+        from fuel_record fr
+        where fr.work_order = #{workOrder}
+        ORDER BY fr.id ASC
+    </select>
 </mapper>
