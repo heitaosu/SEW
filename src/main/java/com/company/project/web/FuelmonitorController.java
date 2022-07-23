@@ -113,6 +113,16 @@ public class FuelmonitorController {
                 || FuelState.FUEL_STATE_19.getState() == type){
             // 手动加油启停状态单独处理
             if (FuelState.FUEL_STATE_11.getState() == type){
+                if (val.equals("1")){
+                    Object obj = globalCache.get(FuelValue.FUEL_STATE_53.getSwitchKey());
+                    if (obj == null){
+                        return ResultGenerator.genFailResult("注油目标值要大于0");
+                    }
+                    Double youliang = Double.valueOf(obj.toString());
+                    if (youliang <= 0.1){
+                        return ResultGenerator.genFailResult("注油目标值要大于0");
+                    }
+                }
                 val = val.equals("1") ? btn_on_flag[0] : btn_on_flag[1];
                 globalCache.publish(ProjectConstant.BTN_EVENT_CHANNEL, FuelState.FUEL_STATE_20.getSwitchKey() + btn_connect_flag + val);
             }
@@ -149,7 +159,7 @@ public class FuelmonitorController {
      * @return
      */
     @PostMapping("/setValue.json")
-    public Result set(@RequestParam(required=true) Integer type, @RequestParam(required=true) Number value) {
+    public Result set(@RequestParam(required=true) Integer type, @RequestParam(required=true) Double value) {
         String key = FuelValue.getSwitchKey(type);
         if (StringUtils.isEmpty(key)){
             return ResultGenerator.genFailResult("没有找到类型[" + type + "]对应的值,请检查");
@@ -241,7 +251,6 @@ public class FuelmonitorController {
         Object fuel_state_54 = globalCache.get(FuelValue.FUEL_STATE_54.getSwitchKey());
         list.add(String.format(INIT_VAL_FORMAT,FuelValue.FUEL_STATE_54.getState(),(fuel_state_54 == null ? projectConfig.getSYSTEM_INIT_VAL_54_NUM() : fuel_state_54)));
 
-
         if(!fuelRecordService.scanIsEnd()){
             // 注油目标值
             Object fuel_state_204 = globalCache.get(FuelState.PAGE_CODE_204.getSwitchKey());
@@ -302,12 +311,36 @@ public class FuelmonitorController {
                 list.add(FuelState.PAGE_CODE_203.getSwitchKey() + PAGE_CODE_203);
             }
         }else {
-            list.add(String.format(INIT_VAL_FORMAT,FuelValue.FUEL_STATE_53.getState(),0));
+            //list.add(String.format(INIT_VAL_FORMAT,FuelValue.FUEL_STATE_53.getState(),0));
 
             list.add(FuelState.PAGE_CODE_203.getSwitchKey()+"");
             list.add(FuelState.PAGE_SEQUENCECODE_202.getSwitchKey()+"");
             list.add(FuelState.PAGE_MODEL_201.getSwitchKey()+"");
             list.add(FuelState.PAGE_INSTALLTYPE_200.getSwitchKey()+"");
+
+            // 注油目标值
+            Object fuel_value_53 = globalCache.get(FuelValue.FUEL_STATE_53.getSwitchKey());
+            if (fuel_value_53 != null){
+                list.add(String.format(INIT_VAL_FORMAT,FuelValue.FUEL_STATE_53.getState(),fuel_value_53));
+            }
+
+            Object fuel_btn_11 = globalCache.get(FuelState.FUEL_STATE_20.getSwitchKey());
+            if (fuel_btn_11 != null){
+                // 手动加油开关
+                list.add(String.format(INIT_BTN_FORMAT,FuelState.FUEL_STATE_11.getState(),fuel_btn_11));
+            }
+
+            Object fuel_btn_16 = globalCache.get(FuelState.FUEL_STATE_16.getSwitchKey());
+            if (fuel_btn_16 != null){
+                // 循环or注油
+                list.add(String.format(INIT_BTN_FORMAT,FuelState.FUEL_STATE_16.getState(),fuel_btn_16));
+            }
+
+            Object fuel_btn_17 = globalCache.get(FuelState.FUEL_STATE_17.getSwitchKey());
+            if (fuel_btn_17 != null){
+                // 消音按钮
+                list.add(String.format(INIT_BTN_FORMAT,FuelState.FUEL_STATE_17.getState(),fuel_btn_17));
+            }
 
         }
         //globalCache.publish(ProjectConstant.BTN_EVENT_CHANNEL, FuelValue.FUEL_STATE_51.getSwitchKey() + btn_connect_flag + projectConfig.getSYSTEM_INIT_VAL_51_NUM());

@@ -274,7 +274,7 @@ public class FuelRecordServiceImpl extends AbstractService<FuelRecord> implement
         FuelRecord fuelRecord = new FuelRecord();
         try {
             Double dval = Double.valueOf(globalCache.get(FuelValue.FUEL_STATE_62.getSwitchKey()).toString());
-            nf.setMaximumFractionDigits(0);
+            nf.setMaximumFractionDigits(2);
             //注油量实际值
             fuelRecord.setFuelRealVal(Double.valueOf(nf.format(dval)));
 
@@ -306,9 +306,9 @@ public class FuelRecordServiceImpl extends AbstractService<FuelRecord> implement
         }
         try {
             //注油量设定值（从订单中读取的如果有的话）
-            fuelRecord.setFuelSetVal(Double.valueOf(nf.format(fileContent.substring(760,768).trim())));
+            fuelRecord.setFuelSetVal(Double.valueOf(nf.format(Double.valueOf(fileContent.substring(760,768).trim()))));
         }catch (Exception e){
-            log.error("注油量从订单中读取错误，注油量设定为默认值");
+            log.error("注油量从订单中读取错误，注油量设定为默认值",e.getMessage());
         }
         fuelRecord.setOperId(scan_oper_id);
         return fuelRecord;
